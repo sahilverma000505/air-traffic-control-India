@@ -140,7 +140,7 @@ Double-click `run.bat` in the project root. This boots the lightweight Python SQ
 ### Option 2: Running via Command Line
 ```bash
 # Clone the repository
-git clone https://github.com/<your-username>/air-traffic-control-india.git
+git clone https://github.com/sahilverma000505/air-traffic-control-india.git
 
 # Navigate into the project directory
 cd air-traffic-control-india
