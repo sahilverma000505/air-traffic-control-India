@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Traffic Control of India - Prim's Algorithm MST (DAA Mini Project)</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Top Application Header -->
+    <header class="app-header">
+        <div class="brand-section">
+            <div class="radar-logo-icon"></div>
+            <div>
+                <h1>AIR TRAFFIC CONTROL <span class="highlight">OF INDIA</span></h1>
+                <p>DAA Mini Project: Prim's Algorithm for Airspace Network Optimization (MST)</p>
+            </div>
+        </div>
+
+        <div class="header-controls">
+            <button id="btnOpenPhone" class="ctrl-btn" style="border-color:var(--neon-cyan); color:var(--neon-cyan); padding:5px 10px; font-size:0.78rem;">
+                📱 Open on Phone
+            </button>
+
+            <div class="hub-select-wrapper">
+                <label for="startHubSelect">Start Hub (V₀):</label>
+                <select id="startHubSelect"></select>
+            </div>
+
+            <div id="backendStatusBadge" class="status-badge offline">
+                <span class="pulse-dot offline"></span> Checking connection...
+            </div>
+        </div>
+    </header>
+
+    <!-- ELI5 (Explain Like I'm 5) Beginner Guide Banner -->
+    <section class="eli5-banner">
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.1rem;">👶</span>
+            <span style="font-size:0.82rem; font-family:var(--font-mono); color:#fff;">
+                New to Algorithms &amp; Full-Stack? Click here for the super simple guide:
+            </span>
+        </div>
+        <button id="btnToggleEli5" class="eli5-banner-btn">
+            💡 Explain Like I'm 5 (Click to Open)
+        </button>
+    </section>
+
+    <!-- ELI5 Collapsible Drawer -->
+    <div id="eli5Drawer" class="eli5-drawer">
+        <div class="eli5-grid">
+            <div class="eli5-card">
+                <h4>📍 1. What is an Airport Graph?</h4>
+                <p>
+                    Imagine India is a giant coloring book! Every airport (Delhi, Mumbai, Bengaluru) is a <strong>dot</strong>. Every flight corridor is a <strong>pencil line</strong> connecting two dots with a number telling us how many kilometers long it is.
+                </p>
+            </div>
+            <div class="eli5-card yellow">
+                <h4>🧶 2. What is Prim's Algorithm?</h4>
+                <p>
+                    Imagine you have 16 toy houses on the floor and a ball of string. You want to tie every single house together so toy cars can visit any house, using the <strong>shortest piece of string</strong>! Prim's algorithm starts at one house, grabs the closest untied house, and repeats until all 16 are connected without any redundant loops.
+                </p>
+            </div>
+            <div class="eli5-card green">
+                <h4>🍽️ 3. What is Client-Server-Database?</h4>
+                <p>
+                    Think of a restaurant!
+                    <br>• <strong>Client (You in Browser)</strong>: The customer ordering food.
+                    <br>• <strong>Server (Python/Java)</strong>: The friendly waiter who takes your order slip to the kitchen.
+                    <br>• <strong>Database (SQLite/MySQL)</strong>: The kitchen pantry where all airport and route records are kept fresh!
+                </p>
+            </div>
+            <div class="eli5-card purple">
+                <h4>📖 4. What is JDBC &amp; Hibernate?</h4>
+                <p>
+                    The Java Waiter speaks <strong>Java language</strong>, but the Database Pantry speaks <strong>SQL language</strong>!
+                    <br>• <strong>JDBC</strong> is like sending a handwritten note in SQL.
+                    <br>• <strong>Hibernate ORM</strong> is like an automatic translator that turns Java Objects into database tables with zero effort!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-time Aviation & DAA Metrics Bar -->
+    <section class="metrics-bar">
+        <div class="metric-card">
+            <span class="label">MST Network Distance</span>
+            <span class="value highlight" id="metricMstCost">0 km</span>
+        </div>
+        <div class="metric-card">
+            <span class="label">Full Mesh Distance</span>
+            <span class="value" id="metricMeshCost">0 km</span>
+        </div>
+        <div class="metric-card savings">
+            <span class="label">Airspace Distance Saved</span>
+            <span class="value highlight" id="metricSavings">0%</span>
+        </div>
+        <div class="metric-card">
+            <span class="label">Selected Corridors</span>
+            <span class="value" id="metricEdgesCount">0 Corridors</span>
+        </div>
+        <div class="metric-card">
+            <span class="label">Running MST Cost</span>
+            <span class="value highlight" id="runningMstCost">0 km</span>
+        </div>
+        <div class="metric-card exec">
+            <span class="label">DAA Solve Time</span>
+            <span class="value" id="metricExecTime">0 ms</span>
+        </div>
+    </section>
+
+    <!-- Playback & Algorithm Control Bar -->
+    <div class="playback-bar">
+        <div class="control-btn-group">
+            <button id="btnPlay" class="ctrl-btn primary" title="Auto-play Prim's steps">
+                <span>▶ Play</span>
+            </button>
+            <button id="btnPrev" class="ctrl-btn" title="Previous step">
+                <span>⏮ Prev</span>
+            </button>
+            <button id="btnNext" class="ctrl-btn" title="Next step">
+                <span>⏭ Next</span>
+            </button>
+            <button id="btnReset" class="ctrl-btn" title="Reset to Step 1">
+                <span>🔄 Reset</span>
+            </button>
+        </div>
+
+        <div class="speed-control">
+            <span>Step Delay:</span>
+            <input type="range" id="speedSlider" min="200" max="1900" value="1400" step="100">
+            <span id="speedLabel">0.7s</span>
+        </div>
+
+        <div class="control-btn-group">
+            <button id="btnExportReport" class="ctrl-btn" title="Download MST summary report">
+                <span>📥 Export MST Report</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main 2-Column Container -->
+    <main class="main-container">
+
+        <!-- Left Column: Interactive Radar Canvas -->
+        <section class="radar-panel">
+            <div class="panel-header">
+                <h2>
+                    <span style="color:var(--neon-emerald)">●</span> 
+                    INDIAN AIRSPACE RADAR SURVEILLANCE &amp; MST ROUTING
+                </h2>
+                <span style="font-size:0.75rem; font-family:var(--font-mono); color:var(--text-secondary);">
+                    Range: 1500 KM | Freq: 121.5 MHz | 16 Hubs
+                </span>
+            </div>
+
+            <div class="canvas-wrapper">
+                <canvas id="radarCanvas"></canvas>
+
+                <!-- Radar Map HUD Legend -->
+                <div class="radar-hud-legend">
+                    <div class="legend-item">
+                        <div class="legend-line mst"></div>
+                        <span>Prim's Accepted MST Corridor</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line candidate"></div>
+                        <span>Candidate Cut Edge (Min-Heap)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line standard"></div>
+                        <span>Standard Domestic Airway</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-line storm"></div>
+                        <span>Severe Weather / Storm Reroute</span>
+                    </div>
+                    <div class="legend-item">
+                        <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#ff4455;"></span>
+                        <span>High Sector Congestion (&gt;80%)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Column: Interactive Tabbed Panel -->
+        <aside class="info-panel">
+            <nav class="tab-nav">
+                <button class="tab-btn active" data-tab="tabAlgorithm">Algorithm Trace</button>
+                <button class="tab-btn" data-tab="tab3Tier">3-Tier Flow (JDBC/ORM)</button>
+                <button class="tab-btn" data-tab="tabPerformance">Delays &amp; Fuel Saved</button>
+                <button class="tab-btn" data-tab="tabMultiLang">Java / C++ / C / Python</button>
+                <button class="tab-btn" data-tab="tabFlights">Flights &amp; Storms</button>
+                <button class="tab-btn" data-tab="tabDatabase">Database Tables</button>
+            </nav>
+
+            <div class="tab-content">
+
+                <!-- TAB 1: ALGORITHM STEP TRACE -->
+                <div id="tabAlgorithm" class="tab-pane active">
+                    
+                    <!-- Step Progress Box -->
+                    <div class="step-status-box">
+                        <div class="step-header-row">
+                            <span class="step-counter" id="stepCounter">Step 1 of 21</span>
+                            <span class="step-badge init" id="stepTypeBadge">INIT</span>
+                        </div>
+                        <div class="progress-track">
+                            <div class="progress-fill" id="stepProgressBar" style="width: 5%;"></div>
+                        </div>
+                        <div class="step-explanation" id="stepExplanation">
+                            Initializing Prim's Algorithm...
+                        </div>
+                    </div>
+
+                    <!-- Cut Sets: Visited vs Unvisited Vertices -->
+                    <div class="vertex-sets">
+                        <div class="chip-box">
+                            <h4>Connected Set V_MST (Visited)</h4>
+                            <div class="chips-container" id="visitedChips"></div>
+                        </div>
+                        <div class="chip-box">
+                            <h4>Remaining Set V - V_MST (Unvisited)</h4>
+                            <div class="chips-container" id="unvisitedChips"></div>
+                        </div>
+                    </div>
+
+                    <!-- Min-Priority Queue (Min-Heap) Live Inspector -->
+                    <div class="hud-table-wrapper">
+                        <h4>MIN-PRIORITY QUEUE (CUT EDGES SORTED ASCENDING)</h4>
+                        <table class="hud-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Airway Corridor</th>
+                                    <th>Distance</th>
+                                    <th>Call-sign</th>
+                                </tr>
+                            </thead>
+                            <tbody id="minHeapTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Live Pseudocode Line-by-Line Highlighter -->
+                    <div class="code-box">
+                        <div style="color:var(--neon-cyan); margin-bottom:6px; font-weight:600;">Prim's Algorithm Pseudocode:</div>
+                        <div class="code-line" data-line="1"><span class="line-num">1</span><span>Algorithm PrimsMST(G, w, s):</span></div>
+                        <div class="code-line" data-line="2"><span class="line-num">2</span><span>  V_new = {s}, T = ∅, Q = MinHeap()</span></div>
+                        <div class="code-line" data-line="3"><span class="line-num">3</span><span>  for each edge (s, v) ∈ E: Q.insert(s, v, w(s,v))</span></div>
+                        <div class="code-line" data-line="4"><span class="line-num">4</span><span>  while |V_new| &lt; |V| and not Q.isEmpty():</span></div>
+                        <div class="code-line" data-line="5"><span class="line-num">5</span><span>    (u, v, dist) = Q.extractMin()  // Greedy choice</span></div>
+                        <div class="code-line" data-line="6"><span class="line-num">6</span><span>    if v ∈ V_new then continue    // Avoid cycle</span></div>
+                        <div class="code-line" data-line="7"><span class="line-num">7</span><span>    V_new = V_new ∪ {v}; T = T ∪ {(u, v)}</span></div>
+                        <div class="code-line" data-line="8"><span class="line-num">8</span><span>    for each neighbor w of v where w ∉ V_new:</span></div>
+                        <div class="code-line" data-line="9"><span class="line-num">9</span><span>      Q.insert(v, w, w(v, w)); return T</span></div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: INTERACTIVE 3-TIER FLOW (CLIENT <-> SERVER <-> JDBC / HIBERNATE <-> DB) -->
+                <div id="tab3Tier" class="tab-pane">
+                    <div class="theory-card">
+                        <h3>Client ➔ Server ➔ JDBC / Hibernate ➔ Database Flow</h3>
+                        <p>
+                            Click the button below to see a live simulation of an HTTP request traveling across the entire full-stack architecture:
+                        </p>
+                        <button id="btnTriggerFlowSim" class="btn-submit" style="margin-top:6px;">
+                            ⚡ Run Live 3-Tier Packet Flow Animation
+                        </button>
+                    </div>
+
+                    <!-- Visual Flow Diagram -->
+                    <div class="flow-diagram-container">
+                        <div class="flow-nodes-wrapper">
+                            <div class="flow-node" id="nodeClient">
+                                <div class="node-icon">🖥️</div>
+                                <div class="node-title">TIER 1: CLIENT</div>
+                                <div class="node-subtitle">Browser / Radar UI</div>
+                            </div>
+                            <div class="flow-arrow" id="arrow1">➔</div>
+
+                            <div class="flow-node" id="nodeServer">
+                                <div class="node-icon">⚙️</div>
+                                <div class="node-title">TIER 2: SERVER</div>
+                                <div class="node-subtitle">REST API (Port 8000)</div>
+                            </div>
+                            <div class="flow-arrow" id="arrow2">➔</div>
+
+                            <div class="flow-node" id="nodeOrm">
+                                <div class="node-icon">📦</div>
+                                <div class="node-title">JDBC / HIBERNATE</div>
+                                <div class="node-subtitle">DAO &amp; Entity ORM</div>
+                            </div>
+                            <div class="flow-arrow" id="arrow3">➔</div>
+
+                            <div class="flow-node" id="nodeDb">
+                                <div class="node-icon">🗄️</div>
+                                <div class="node-title">TIER 3: DATABASE</div>
+                                <div class="node-subtitle">SQLite / MySQL</div>
+                            </div>
+                        </div>
+
+                        <div class="flow-terminal-log" id="flowLogBox">
+                            System Idle. Click "Run Live 3-Tier Packet Flow Animation" above to begin.
+                        </div>
+                    </div>
+
+                    <div class="theory-card">
+                        <h3>How JDBC &amp; Hibernate Work in this Project</h3>
+                        <p>
+                            <strong>1. JDBC (Java Database Connectivity)</strong>: Uses <code>AirportJdbcDao.java</code> to send direct SQL queries like:
+                            <br><code style="color:var(--neon-emerald);">SELECT * FROM airway_routes WHERE is_active = 1</code>
+                            <br>and reads raw <code>ResultSet</code> rows directly into Java memory.
+                        </p>
+                        <p style="margin-top:8px;">
+                            <strong>2. Hibernate ORM</strong>: Eliminates SQL boilerplate by mapping the database tables to Java Classes using JPA annotations:
+                            <br><code style="color:var(--neon-cyan);">@Entity @Table(name="airports") public class Airport { ... }</code>
+                            <br>Hibernate runs HQL queries like <code>FROM Airport</code> and returns clean typed Java objects ready for Prim's algorithm!
+                        </p>
+                    </div>
+                </div>
+
+                <!-- TAB 3: PERFORMANCE ANALYSIS & AIRSPACE CAPACITY -->
+                <div id="tabPerformance" class="tab-pane">
+                    
+                    <div class="theory-card">
+                        <h3>Aviation Efficiency &amp; Environmental Impact Analysis</h3>
+                        <p>
+                            By eliminating 14 redundant, overlapping airway corridors across India, Prim's Minimum Spanning Tree delivers quantifiable performance improvements:
+                        </p>
+                    </div>
+
+                    <div class="perf-stat-grid">
+                        <div class="perf-stat-box green">
+                            <div class="title">⏱️ Delays Prevented</div>
+                            <div class="val" id="perfDelaysVal">918 Mins</div>
+                            <span style="font-size:0.68rem; color:var(--text-secondary);">~15.3 hours holding time saved</span>
+                        </div>
+                        <div class="perf-stat-box amber">
+                            <div class="title">⛽ Jet Fuel Saved</div>
+                            <div class="val" id="perfFuelVal">35,800 L</div>
+                            <span style="font-size:0.68rem; color:var(--text-secondary);">Based on 3.12 L/km burn</span>
+                        </div>
+                        <div class="perf-stat-box">
+                            <div class="title">🌿 CO₂ Averted</div>
+                            <div class="val" id="perfCo2Val">90.2 Tons</div>
+                            <span style="font-size:0.68rem; color:var(--text-secondary);">2.52 kg CO₂ / L jet fuel</span>
+                        </div>
+                        <div class="perf-stat-box pink">
+                            <div class="title">📈 Airspace Boost</div>
+                            <div class="val">+35%</div>
+                            <span style="font-size:0.68rem; color:var(--text-secondary);">Less corridor cross-conflict</span>
+                        </div>
+                    </div>
+
+                    <div class="hud-table-wrapper">
+                        <h4>AIRPORT SECTOR HANDLING CAPACITY &amp; RUNWAY LOAD</h4>
+                        <div style="max-height:260px; overflow-y:auto;">
+                            <table class="hud-table">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Airport City</th>
+                                        <th>Runways</th>
+                                        <th>Capacity/hr</th>
+                                        <th>Sector Load</th>
+                                        <th>Delay Risk</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="capacityTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 4: MULTI-LANGUAGE DAA IMPLEMENTATION (JAVA, C++, C, PYTHON) -->
+                <div id="tabMultiLang" class="tab-pane">
+                    <div class="theory-card">
+                        <h3>Prim's Algorithm Multi-Language Source Code</h3>
+                        <p>
+                            Submit the code in whichever programming language your college/professor requires:
+                        </p>
+                        
+                        <div class="lang-subtabs">
+                            <button class="lang-subtab-btn active" data-lang="java">Java (PriorityQueue)</button>
+                            <button class="lang-subtab-btn" data-lang="cpp">C++ (std::priority_queue)</button>
+                            <button class="lang-subtab-btn" data-lang="c">C (Adjacency Matrix)</button>
+                            <button class="lang-subtab-btn" data-lang="python">Python (heapq)</button>
+                        </div>
+
+                        <div id="codeViewArea" class="code-preview-box"></div>
+                    </div>
+                </div>
+
+                <!-- TAB 5: ATC OPERATIONS & FLIGHTS -->
+                <div id="tabFlights" class="tab-pane">
+                    
+                    <div class="theory-card">
+                        <h3>Active Air Traffic Radar Dispatch</h3>
+                        <p>Simulated domestic commercial flights actively navigating along Indian airway corridors:</p>
+                        <div class="hud-table-wrapper" style="margin-top:10px;">
+                            <table class="hud-table">
+                                <thead>
+                                    <tr>
+                                        <th>Flight</th>
+                                        <th>Airline</th>
+                                        <th>Route</th>
+                                        <th>Aircraft</th>
+                                        <th>Flight Level</th>
+                                        <th>Speed</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="flightsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Weather Disruption Simulation -->
+                    <div class="form-card">
+                        <h3>Airspace Hazard &amp; Storm Simulation</h3>
+                        <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:12px;">
+                            Inject a severe weather hazard into an airway corridor to test dynamic rerouting and MST recalculation:
+                        </p>
+                        <form id="weatherHazardForm">
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label for="hazardRouteSelect">Select Corridor:</label>
+                                    <select id="hazardRouteSelect"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="hazardTypeSelect">Hazard Severity:</label>
+                                    <select id="hazardTypeSelect">
+                                        <option value="CLEAR">CLEAR (Normal Operation)</option>
+                                        <option value="TURBULENCE">TURBULENCE (+20% Distance Delay)</option>
+                                        <option value="THUNDERSTORM">THUNDERSTORM (+50% Distance Delay / Closed)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-submit">Apply Weather Condition &amp; Recalculate MST</button>
+                        </form>
+                    </div>
+
+                </div>
+
+                <!-- TAB 7: DATABASE & JDBC / HIBERNATE -->
+                <div id="tabDatabase" class="tab-pane">
+                    
+                    <div class="theory-card">
+                        <h3>Database Architecture (SQLite, MySQL, JDBC, Hibernate)</h3>
+                        <p>
+                            This project is built with clean database separation. The data displayed below is stored in 
+                            <code>database/airtraffic.db</code> (SQLite) and can be connected directly to Java via JDBC or Hibernate ORM.
+                        </p>
+                        <div style="display:flex; gap:10px; margin-top:8px;">
+                            <button id="btnResetDatabase" class="ctrl-btn" style="border-color:var(--neon-coral); color:var(--neon-coral);">
+                                ↺ Reset Database to Default Seed Data
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Add Custom Airport Form -->
+                    <div class="form-card">
+                        <h3>Add New Indian Airport (Graph Vertex)</h3>
+                        <form id="addAirportForm">
+                            <div class="form-grid-3">
+                                <div class="form-group">
+                                    <label>IATA Code:</label>
+                                    <input type="text" id="newAirportCode" placeholder="e.g. AYJ" maxlength="5" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Airport Name:</label>
+                                    <input type="text" id="newAirportName" placeholder="e.g. Maharishi Valmiki Intl" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>City:</label>
+                                    <input type="text" id="newAirportCity" placeholder="e.g. Ayodhya" required>
+                                </div>
+                            </div>
+                            <div class="form-grid-3">
+                                <div class="form-group">
+                                    <label>State:</label>
+                                    <input type="text" id="newAirportState" placeholder="e.g. Uttar Pradesh" value="India">
+                                </div>
+                                <div class="form-group">
+                                    <label>Latitude:</label>
+                                    <input type="number" id="newAirportLat" step="0.0001" placeholder="e.g. 26.7460" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Longitude:</label>
+                                    <input type="number" id="newAirportLon" step="0.0001" placeholder="e.g. 82.1550" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-submit">+ Insert Airport into Database</button>
+                        </form>
+                    </div>
+
+                    <!-- Add Custom Airway Form -->
+                    <div class="form-card">
+                        <h3>Add New Airway Corridor (Graph Edge with Weight)</h3>
+                        <form id="addRouteForm">
+                            <div class="form-grid-3">
+                                <div class="form-group">
+                                    <label>Source Airport:</label>
+                                    <select id="newRouteSource"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Destination Airport:</label>
+                                    <select id="newRouteDest"></select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Distance (km):</label>
+                                    <input type="number" id="newRouteDist" min="10" placeholder="e.g. 620" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Corridor Code:</label>
+                                <input type="text" id="newRouteCorridor" placeholder="e.g. Q99-DIRECT" value="Q-NEW">
+                            </div>
+                            <button type="submit" class="btn-submit">+ Connect Corridor &amp; Update Graph</button>
+                        </form>
+                    </div>
+
+                    <!-- Database Tables Preview -->
+                    <div class="hud-table-wrapper">
+                        <h4>TABLE: airports (Graph Vertices with Capacities)</h4>
+                        <div style="max-height:220px; overflow-y:auto;">
+                            <table class="hud-table">
+                                <thead>
+                                    <tr>
+                                        <th>Code</th>
+                                        <th>Name</th>
+                                        <th>City</th>
+                                        <th>Coordinates</th>
+                                        <th>Capacity/hr</th>
+                                        <th>Load %</th>
+                                        <th>Runways</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dbAirportsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="hud-table-wrapper">
+                        <h4>TABLE: airway_routes (Graph Edges with Distance Weights)</h4>
+                        <div style="max-height:220px; overflow-y:auto;">
+                            <table class="hud-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Corridor</th>
+                                        <th>Distance</th>
+                                        <th>Code</th>
+                                        <th>Frequency</th>
+                                        <th>Condition</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dbRoutesTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Java Integration Preview Code Snippet -->
+                    <div class="theory-card">
+                        <h3>Java JDBC &amp; Hibernate Ready Snippets</h3>
+                        <p style="font-size:0.8rem;">
+                            Your project includes complete ready-to-run Java classes in <code>database/java_integration_kit/</code>:
+                        </p>
+                        <div class="code-preview-box">// 1. Pure JDBC Query Example (AirportJdbcDao.java)
+Connection conn = DbConnectionUtil.getConnection();
+PreparedStatement ps = conn.prepareStatement("SELECT * FROM airway_routes WHERE is_active = 1");
+ResultSet rs = ps.executeQuery();
+while (rs.next()) {
+    String src = rs.getString("source_code");
+    String dst = rs.getString("dest_code");
+    int weight = rs.getInt("distance_km");
+    graph.addEdge(src, dst, weight);
+}
+
+// 2. Hibernate ORM Entity Query (AirportHibernateDao.java)
+Session session = HibernateUtil.getSessionFactory().openSession();
+List<Airport> airports = session.createQuery("FROM Airport", Airport.class).list();
+for (Airport a : airports) {
+    System.out.println("Loaded: " + a.getCode() + " -> " + a.getName());
+}</div>
+                    </div>
+
+                </div>
+
+            </div>
+        </aside>
+
+    </main>
+
+    <!-- Mobile Phone Access Modal -->
+    <div id="phoneModal" class="phone-modal-backdrop" style="display:none;">
+        <div class="phone-modal-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <h3 style="color:var(--neon-cyan); font-family:var(--font-mono); font-size:1.05rem; display:flex; align-items:center; gap:8px;">
+                    📱 Open on Your Phone
+                </h3>
+                <button id="btnClosePhoneModal" style="background:transparent; border:none; color:#fff; font-size:1.2rem; cursor:pointer;">✖</button>
+            </div>
+
+            <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:14px; line-height:1.5;">
+                Make sure your phone is connected to the <strong>same Wi-Fi network</strong> as your laptop/PC!
+            </p>
+
+            <div style="display:flex; flex-direction:column; align-items:center; gap:12px; margin-bottom:14px;">
+                <!-- QR Code image generated for local IP -->
+                <div style="background:#fff; padding:10px; border-radius:8px; display:inline-block; box-shadow:0 0 16px rgba(0,229,255,0.4);">
+                    <img id="phoneQrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=http%3A%2F%2F192.168.1.15%3A8000" alt="Scan to open on phone" width="200" height="200" style="display:block;">
+                </div>
+                <span style="font-size:0.75rem; color:var(--neon-emerald); font-family:var(--font-mono);">
+                    Point your phone camera at the QR code above
+                </span>
+            </div>
+
+            <div style="background:#030711; border:1px solid var(--border-color); border-radius:6px; padding:10px 14px; margin-bottom:14px; text-align:center;">
+                <span style="font-size:0.7rem; color:var(--text-secondary); display:block; text-transform:uppercase; font-family:var(--font-mono);">
+                    Or type this URL directly into your phone's browser (Safari / Chrome):
+                </span>
+                <span id="phoneUrlText" style="font-size:1.1rem; font-weight:700; color:var(--neon-cyan); font-family:var(--font-mono); letter-spacing:0.5px;">
+                    http://192.168.1.15:8000
+                </span>
+            </div>
+
+            <button id="btnCopyPhoneUrl" class="btn-submit" style="width:100%; text-align:center;">
+                📋 Copy Link to Clipboard
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript Modules -->
+    <script src="js/data.js"></script>
+    <script src="js/prims.js"></script>
+    <script src="js/radar-canvas.js"></script>
+    <script src="js/db-api.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
